@@ -11,6 +11,12 @@ from MLTools import *
 data_sheet = pd.read_csv("iris.csv")
 classes = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"] #Species
 
+def classify_value(value: str, mark: str) -> int:
+    if(value == mark):
+        return 1
+    else:
+        return -1
+    
 def dataset_classificator(s):
     if(s == "Iris-setosa"):
         return 1
@@ -18,30 +24,40 @@ def dataset_classificator(s):
         return -1
     
 
-x = data_sheet[["SepalLengthCm","SepalWidthCm","PetalLengthCm","PetalWidthCm","Species"]]
-x = x[(x["Species"] == "Iris-setosa") | (x["Species"] == "Iris-versicolor")]
-x["Species"] = x["Species"].map(dataset_classificator)
+data = data_sheet[["SepalLengthCm","SepalWidthCm","PetalLengthCm","PetalWidthCm","Species"]]
 
-def data_sampler(n,k):
-    ss = ["SepalLengthCm","SepalWidthCm","PetalLengthCm","PetalWidthCm","Species"]
+data_setosa                = data.copy()
+data_setosa["Species"]     = data_setosa["Species"].map(lambda x: classify_value(x,"Iris-setosa"))
+data_versicolor            = data.copy()
+data_versicolor["Species"] = data_versicolor["Species"].map(lambda x: classify_value(x,"Iris-versicolor"))
+data_virginica             = data.copy()
+data_virginica["Species"]  = data_virginica["Species"].map(lambda x: classify_value(x,"Iris-virginica"))
+
+
+def data_sampler(n,k,data):
+    ss = ["SepalLengthCm","SepalWidthCm","PetalLengthCm","PetalWidthCm"]
     s_x = ss[n]
     s_y = ss[k]
-    X = list(x[s_x])
-    Y = list(x[s_y])
-    return (X,Y)
+    s_c = "Species"
+    x = list(data[s_x])
+    y = list(data[s_y])
+    c = list(data[s_c])
+    return (x,y,c)
 
+x_setosa    , y_setosa    , c_setosa     = data_sampler(0,1,data_setosa)
+x_versicolor, y_versicolor, c_versicolor = data_sampler(0,1,data_versicolor)
+x_virginica , y_virginica , c_virginica  = data_sampler(0,1,data_virginica)
 
-def find_classification_line(X,Y):
-    C = list(x["Species"])
-    nx,ny,b = minimize(min_function2D, x0 = (0,0,0),args=(X,Y,C), method='trust-constr', tol=1e-10).x
-    print(nx,ny,b)
-    plot_classes2D(X,Y,C,nx,ny,b)
+fig, ax = plt.subplots()
+minimization_function0 = lambda func, args: minimize(func, x0 = (0,0,0),args=args, method='trust-constr', tol=1e-10).x
 
-find_classification_line(*data_sampler(0,1))
-find_classification_line(*data_sampler(0,2))
-find_classification_line(*data_sampler(0,3))
-find_classification_line(*data_sampler(1,2))
-find_classification_line(*data_sampler(1,3))
-find_classification_line(*data_sampler(2,3))
+def find_classification_line(ax,X,Y,C,color,minimization_function):
+    nx,ny,b = minimization_function(min_function2D,(X,Y,C))
+    plot_classes2D(ax,X,Y,C,nx,ny,b,color)
+    
+find_classification_line(ax,x_setosa,y_setosa,c_setosa,"red",minimization_function0)
+find_classification_line(ax,x_versicolor,y_versicolor,c_versicolor,"green",minimization_function0)
+find_classification_line(ax,x_virginica,y_virginica,c_virginica,"blue",minimization_function0)
 
+ax.grid()
 plt.show()
