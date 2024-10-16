@@ -132,35 +132,57 @@ def plot_classes3D(ax,nx,ny,nz,b,color,X,Y,Z,C):
     ax.set_zlim(min(Z), max(Z))
 
 # nD
+def plane_projectionND(vector, normal):
+    return np.dot(vector, normal)
 
-def plane_projectionND(x,n):
-    return np.dot(x,n)
+def classifierND(vector, normal, intersection):
+    vector_shifted = vector[:-1]
+    last = vector[-1]-intersection
+    vector_shifted.append(last)
+    return np.sign(plane_projectionND(vector_shifted, normal))
 
-def classifierND(x,n,b):
-    x[len(x)-1]-=b
-    return np.sign(plane_projectionND(x,n))
-
-def min_functionND_MSE(params,x,c):
+def min_functionND_MSE(optimize_values, objects, targets):
     
-    def l_MSE(vector,clss, n,b):
-        print(vector)
-        vector[len(vector)-1]=vector[len(vector)-1] - b
-        return (1 - clss*plane_projectionND(vector, n))**2
+    def l_MSE(vector,clss, normal,intersection):
+        
+        vector_shifted = vector[:-1]
+        last = float(vector[-1])-intersection
+        vector_shifted.append(last)
+        M = clss*plane_projectionND(vector_shifted, normal)
+        return (1 - M)**2
     
-    n = params[:-1]
-    b = params[-1]
+    normal = optimize_values[:-1]
+    intersection = optimize_values[-1]
     
     summ = 0
-    for i in range(len(x)):
-        summ += l_MSE(x[i], c[i], n, b)
-    print(summ)
+    for i in range(len(objects)):
+        summ += l_MSE(objects[i], targets[i], normal, intersection)
+    
     return summ
 
-def find_classification_hyperplane(x,c):
-    dimension = len(x)
+def find_classification_hyperplane(min_function,objects,targets):
+    dimension = len(objects[0])
     x0 = get_zero_array(dimension+1)
-    opts =  minimize(min_functionND_MSE, x0 = x0, args=(x,c), method='trust-constr', tol=1e-10).x
-    n = opts[:-1]
-    b = opts[-1]
-    return [n,b]
+    opts =  minimize(min_function, x0 = x0, args=(objects,targets), method='trust-constr', tol=1e-17).x
+    normal = opts[:-1]
+    intersection = opts[-1]
+    return [normal, intersection]
 
+def min_functionND_logistic(optimize_values, objects, targets):
+    
+    def l_logistic(vector,clss, normal,intersection):
+        
+        vector_shifted = vector[:-1]
+        last = float(vector[-1])-intersection
+        vector_shifted.append(last)
+        M = clss*plane_projectionND(vector_shifted, normal)
+        return math.log(1+math.exp(-M))
+    
+    normal = optimize_values[:-1]
+    intersection = optimize_values[-1]
+    
+    summ = 0
+    for i in range(len(objects)):
+        summ += l_logistic(objects[i], targets[i], normal, intersection)
+    
+    return summ
