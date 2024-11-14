@@ -12,6 +12,9 @@ def sigmoid(margin):
 def quadric(margin):
     return (1-margin)**2
 
+
+
+
 def l1_norm(vector) -> float:
     sum = 0
     for x in vector:
@@ -23,6 +26,7 @@ def l2_norm(vector) -> float:
     for x in vector:
         sum += x**2
     return float(np.sqrt(sum))
+
 
 def logistic_loss(normal: list, objects: list, targets: list) -> float:
     summ = 0
